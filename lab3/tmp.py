@@ -16,16 +16,19 @@ import numpy as np
 def _viterbi(utteraneHMM, lmfcc):
     means = utteraneHMM['means']
     covars = utteraneHMM['covars']
-    transmat = utteraneHMM['transmat']
+    transmat = utteraneHMM['transmat'][:-1,:-1]
     startprob = utteraneHMM['startprob']
 
     log_emlik = tools2.log_multivariate_normal_density_diag(lmfcc,
                                                             means,
                                                             covars)
+    log_transmat = np.log(transmat)
+    log_startprob = np.log(startprob)
+    viterbi_out = proto2.viterbi(log_emlik, log_startprob, log_transmat)
 
-    viterbi_out = proto2.viterbi(log_emlik, startprob, transmat)
+    return viterbi_out[0], viterbi_out[1]
 
-    return viterbi_out['loglik'], viterbi_out['path']
+    #return viterbi_out['loglik'], viterbi_out['path']
 
 def concatHMMs(hmmmodels, namelist):
     """ Concatenates HMM models in a left to right manner
@@ -92,10 +95,24 @@ nstates = {phone: phoneHMMs[phone]['means'].shape[0]
 stateList = [ph + '_' + str(id) for ph in phones for id in range(nstates[ph])]
 
 filename = 'tidigits/disc_4.1.1/tidigits/train/man/nw/z43a.wav'
+
+train = np.load(os.path.join('data', 'traindata.npz'))['traindata']
+for entry in train:
+    filename_parts = entry['filename'].split('/')
+    if filename_parts[0] == 'data':
+        entry['filename'] = 'tidigits/'+'/'.join(filename_parts[1:])
+
+    if entry['filename'] == filename:
+        generated_sample = entry
+        break
+
 samples, samplingrate = tools3.loadAudio(filename)
 lmfcc = proto1.mfcc(samples)
 
 print('Example lmfcc and computed are same: {}\n'.format(np.all(example['lmfcc'] == lmfcc)))
+print('Example lmfcc and generated are same: {}\n'.format(np.all(example['lmfcc'] == generated_sample['lmfcc'])))
+print('Computed lmfcc and generated are same: {}\n'.format(np.all(generated_sample['lmfcc'] == lmfcc)))
+
 
 wordTrans = list(tools3.path2info(filename)[2])
 print('Example wordTrans and computed are same: {}\n'.format(np.all(example['wordTrans'] == wordTrans)))
@@ -105,8 +122,8 @@ print('Example phoneTrans and computed are same: {}\n'.format(np.all(example['ph
 # print(phoneTrans)
 # print(example['phoneTrans'])
 
-# utteranceHMM = proto3.concatHMMs(phoneHMMs, phoneTrans)
-utteranceHMM = concatHMMs(phoneHMMs, phoneTrans)
+utteranceHMM = proto3.concatHMMs(phoneHMMs, phoneTrans)
+# utteranceHMM = concatHMMs(phoneHMMs, phoneTrans)
 print('For utternaceHMM')
 for key in utteranceHMM.keys():
     print('\t', key)
@@ -128,9 +145,18 @@ print(example['viterbiLoglik'])
 print('Example viterbiLogLik and computed are same: {}\n'.format(np.all(example['viterbiLoglik'] == viterbiLogLik)))
 print('Example viterbiPath and computed are same: {}\n'.format(np.all(example['viterbiPath'] == viterbiPath)))
 
+# dif = example['viterbiPath'] - viterbiPath
+# print("dif: ", dif)
+
+# print(example['viterbiPath'])
+# print(viterbiPath)
+
+
 stateIndexes = []
+usids = []
 for state in viterbiPath:
     usid = stateTrans[int(state)]
+    usids.append(usid)
     stateIndexes.append(stateList.index(usid))
 
-print('Example viterbiStateTrans and computed are same: {}\n'.format(np.all(example['viterbiStateTrans'] == stateIndexes)))
+print('Example viterbiStateTrans and computed are same: {}\n'.format(np.all(example['viterbiStateTrans'] == usids)))

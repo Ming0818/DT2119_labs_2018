@@ -143,8 +143,8 @@ def concatHMMs(hmmmodels, namelist):
         newHMM["name"] += hmmmodels[namelist[i]]["name"] + ' '
         M += hmmmodels[namelist[i]]["means"].shape[0]
 
-    newHMM["startprob"] = np.zeros(M+1)
-    newHMM["transmat"] = np.zeros((M+1, M+1))
+    newHMM["startprob"] = np.zeros(M + 1)
+    newHMM["transmat"] = np.zeros((M + 1, M + 1))
 
     start_i = 0
     for i in range(n):
@@ -164,7 +164,6 @@ def concatHMMs(hmmmodels, namelist):
         start_i += (z - 1)
 
     return newHMM
-
 
 
 def forcedAlignment(lmfcc, phoneHMMs, phoneTrans):

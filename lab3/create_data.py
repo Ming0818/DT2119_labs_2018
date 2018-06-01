@@ -39,7 +39,7 @@ class Main:
     def lists_of_paths_to_split_on(self, data):
         data_len = len(data)
 
-        train_len = int(np.floor(.9*data_len))
+        train_len = int(np.floor(.7*data_len))
         valid_len = data_len-train_len
 
         men_in_train = int(np.floor(train_len/2))
@@ -92,14 +92,14 @@ class Main:
         return training, validation
 
     def extract_features(self, path, test=False):
-        # print('attempting feature extraction')
         data = []
+        print('Attempting feature extraction')
         for root, dirs, files in os.walk(os.path.join(
                                         ROOT, path)):
+            print('For speaker: ', root)
             for file in files:
                 if file.endswith('.wav'):
                     filename = os.path.join(root, file)
-                    # print('\tfor file ', filename)
                     samples, samplingrate = tools3.loadAudio(filename)
 
                     lmfcc = proto1.mfcc(samples)
@@ -140,11 +140,11 @@ class Main:
 
         _, viterbiPath = self._viterbi(utteranceHMM, lmfcc)
 
-        # tools3.frames2trans(viterbiPath, 'alignment/'+os.path.split(filename[:-4])[-1]+'.lab')
-
         stateIndexes = []
+        state_list = []  #to compare with example['viterbiStateTrans']
         for state in viterbiPath:
             usid = stateTrans[int(state)]
+            #state_list.append(usid)
             stateIndexes.append(self.stateList.index(usid))
 
         return stateIndexes
@@ -158,7 +158,7 @@ class Main:
         lmfcc = entry['lmfcc']
 
         wordTrans = list(tools3.path2info(filename)[2])
-        phoneTrans = proto3.words2phones(wordTrans, prondict, addShortPause=True)
+        phoneTrans = proto3.words2phones(wordTrans, prondict)
 
         utteranceHMM = proto3.concatHMMs(self.phoneHMMs, phoneTrans)
 
@@ -177,21 +177,24 @@ class Main:
     def _viterbi(self, utteraneHMM, lmfcc):
         means = utteraneHMM['means']
         covars = utteraneHMM['covars']
-        transmat = np.log(utteraneHMM['transmat'])
-        startprob = np.log(utteraneHMM['startprob'])
+        transmat = utteraneHMM['transmat'][:-1, :-1] #for viterbi we eliminate the extra state
+        startprob = utteraneHMM['startprob']
 
         log_emlik = tools2.log_multivariate_normal_density_diag(lmfcc,
                                                                 means,
                                                                 covars)
+        log_transmat = np.log(transmat)
+        log_startprob = np.log(startprob)
 
-        viterbi_out = proto2.viterbi(log_emlik, startprob, transmat)
+        loglik, path = proto2.viterbi(log_emlik, log_startprob, log_transmat)
 
-        return viterbi_out['loglik'], viterbi_out['path']
+        return loglik, path
 
 
 if __name__ == '__main__':
 
     start = Main()
+
     train_path = 'tidigits/disc_4.1.1/tidigits/train'
     test_path = 'tidigits/disc_4.2.1/tidigits/test'
 

@@ -2,6 +2,7 @@ import os
 from utilities import Constants
 from utilities import Logging
 import numpy as np
+import matplotlib.pyplot as plt
 
 
 from keras.models import Sequential
@@ -9,6 +10,7 @@ from keras.layers import Dense, Activation
 from keras.optimizers import Adam
 from keras.losses import categorical_crossentropy
 from keras.callbacks import EarlyStopping
+from tensorflow.python.client import device_lib
 
 from keras.utils.np_utils import to_categorical
 
@@ -52,6 +54,7 @@ def define_network(input_shape):
 
 
 def train_network(model, train_X, train_Y, valid_X, valid_Y):
+
     early_stopping = EarlyStopping(monitor='val_acc', patience=2)
 
     hist = model.fit(train_X, train_Y,
@@ -67,6 +70,7 @@ def store_model(model):
         os.mkdir(co.MODELS_ROOT)
 
     already_stored = os.listdir(co.MODELS_ROOT)
+    print(already_stored)
     if len(already_stored) != 0:
         # Split model name, get last part #.h5, extract only #
         ids = [int(model_name.split('_')[-1][:-3])
@@ -129,11 +133,34 @@ def training_pipeline(train_feature):
 
     logger.store_log_entry(entry)
 
-
 if __name__ == '__main__':
 
-    # feature_list = ['lmfcc', 'mspec', 'dynamic_lmfcc', 'dynamic_mspec']
-    # for feature in feature_list:
-    #     training_pipeline(feature)
+    print(device_lib.list_local_devices())
+    feature_list = ['mspec'] #['lmfcc', 'mspec', 'dynamic_lmfcc', 'dynamic_mspec']
+    for feature in feature_list:
+        print("Feature used: ", feature)
+        training_pipeline(feature)
 
-    training_pipeline('lmfcc')
+    #read log file and do plotting
+    log_feed = logger.read_log()
+
+    for model in log_feed:
+
+        #plot training and validation loss across epochs
+        epochs_range = range(0, model['epochs_trained'])
+        plt.plot(epochs_range, model['loss'], label='Training loss')
+        plt.plot(epochs_range, model['val_loss'], label='Validation loss')
+        plt.title('Training and Validation loss for model %s' %model['input'])
+        plt.legend()
+        plt.savefig('models/loss_%s'%model['input'] )
+        plt.show()
+
+
+        # plot training and validation accuracy across epochs
+        epochs_range = range(0, model['epochs_trained'])
+        plt.plot(epochs_range, model['loss'], label='Training accuracy')
+        plt.plot(epochs_range, model['val_loss'], label='Validation accuracy')
+        plt.title('Training and Validation accuracy for model %s' % model['input'])
+        plt.legend()
+        plt.savefig('models/accuracy_%s' % model['input'])
+        plt.show()

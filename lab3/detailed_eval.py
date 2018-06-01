@@ -11,7 +11,7 @@ from utilities import Constants
 from utilities import Logging
 
 
-INPUT_KIND = None
+INPUT_KIND = 'lmfcc'
 
 
 def substitute_phonemes_with_generic_name(list_of_phonemes):
@@ -71,9 +71,32 @@ def get_test_unprocessed():
     return np.load(os.path.join(co.DATA_ROOT, 'testdata.npz'))['testdata']
 
 
+def get_train_preprocessed(set_name):
+    train = np.load(os.path.join(co.DATA_ROOT, 'train_preprocessed.npz'))
+
+    train_x = train[set_name]
+    train_y = train['targets'].astype(int)
+
+    return train_x, train_y
+
+
+def get_validation_preprocessed(set_name):
+    valid = np.load(os.path.join(co.DATA_ROOT, 'validation_preprocessed.npz'))
+
+    valid_x = valid[set_name]
+    valid_y = valid['targets'].astype(int)
+
+    return valid_x, valid_y
+
+
+def get_train_unprocessed():
+    return np.load(os.path.join(co.DATA_ROOT, 'traindata.npz'))['traindata']
+
+
 def get_test_sample_range(set_name):
     test_unprocessed = get_test_unprocessed()
-    
+    # test_unprocessed = get_train_unprocessed()
+
     if set_name.split('_')[0] != 'dynamic':
         # start = np.random.choice(len(test_unprocessed))
         start = 290
@@ -134,7 +157,7 @@ def get_indices_as_phonemes(indices):
 
 
 def get_nth_best_model(log, n):
-    sorted_models = sorted(log, key=lambda entry: entry['test_acc'], reverse=True)
+    sorted_models = sorted(log, key=lambda entry: entry['val_acc'], reverse=True)
 
     nth_model_input = sorted_models[n]['input']
     global INPUT_KIND

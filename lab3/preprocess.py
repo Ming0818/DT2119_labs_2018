@@ -1,4 +1,5 @@
 import os
+import gc
 from utilities import Constants
 import numpy as np
 from sklearn.preprocessing import StandardScaler
@@ -229,7 +230,8 @@ class Preprocessor:
     def process(self, set_name):
         print('Loading unprocessed splits...')
         if set_name == 'train':
-            set = np.load(os.path.join(self.co.DATA_ROOT, 'train_split.npz'))['traindata']
+            # set = np.load(os.path.join(self.co.DATA_ROOT, 'train_split.npz'))['traindata']
+            set = np.load(os.path.join(self.co.DATA_ROOT, 'traindata.npz'))['traindata']
         elif set_name == 'validation':
             set = np.load(os.path.join(self.co.DATA_ROOT, 'validation_split.npz'))['validationdata']
         elif set_name == 'test':
@@ -237,6 +239,9 @@ class Preprocessor:
 
         print('Creating dynamic features...')
         set = self._create_dynamic_features(set)
+        np.savez(os.path.join(self.co.DATA_ROOT, 'whole_train_dynamic.npz'), dynamic=set)
+        gc.collect()
+        set = np.load('whole_train_dynamic.npz')['dynamic']
 
         print('Flattening...')
         set_lmfcc, set_mspec, set_dynamic_lmfcc, \
@@ -285,7 +290,7 @@ class Preprocessor:
     def _store(self, set_lmfcc, set_mspec, set_dynamic_lmfcc,
                set_dynamic_mspec, set_targets, set_name):
 
-        filename = '{}_preprocessed.npz'.format(set_name)
+        filename = '{}_preprocessed.npz'.format('whole_train')
 
         np.savez(os.path.join(self.co.DATA_ROOT, filename),
                  lmfcc=set_lmfcc, mspec=set_mspec,
@@ -298,5 +303,5 @@ if __name__ == '__main__':
     preprocessor = Preprocessor()
 
     preprocessor.process('train')
-    preprocessor.process('validation')
-    preprocessor.process('test')
+    # preprocessor.process('validation')
+    # preprocessor.process('test')
