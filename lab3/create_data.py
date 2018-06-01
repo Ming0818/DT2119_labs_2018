@@ -177,8 +177,8 @@ class Main:
     def _viterbi(self, utteraneHMM, lmfcc):
         means = utteraneHMM['means']
         covars = utteraneHMM['covars']
-        transmat = utteraneHMM['transmat']
-        startprob = utteraneHMM['startprob']
+        transmat = np.log(utteraneHMM['transmat'])
+        startprob = np.log(utteraneHMM['startprob'])
 
         log_emlik = tools2.log_multivariate_normal_density_diag(lmfcc,
                                                                 means,

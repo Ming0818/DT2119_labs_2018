@@ -123,6 +123,8 @@ print('Example stateTrans and computed are same: {}\n'.format(np.all(example['st
 
 viterbiLogLik, viterbiPath = _viterbi(utteranceHMM, lmfcc)
 
+print(viterbiLogLik)
+print(example['viterbiLoglik'])
 print('Example viterbiLogLik and computed are same: {}\n'.format(np.all(example['viterbiLoglik'] == viterbiLogLik)))
 print('Example viterbiPath and computed are same: {}\n'.format(np.all(example['viterbiPath'] == viterbiPath)))
 
